@@ -772,15 +772,15 @@ var bendPointUtilities = {
     return intersectionPoint;
   },
   getSegmentPoints: function(edge) {
-    
-    if( edge.css('curve-style') !== 'segments' ) {
+    var curveStyle = edge.css('curve-style');
+    if( curveStyle !== 'segments' && curveStyle !== 'unbundled-bezier' ) {
       return undefined;
     }
     
     var segpts = [];
 
-    var segmentWs = edge.pstyle( 'segment-weights' ).pfValue;
-    var segmentDs = edge.pstyle( 'segment-distances' ).pfValue;
+    var segmentWs = edge.pstyle( this.getWeightsName(curveStyle) ).pfValue;
+    var segmentDs = edge.pstyle( this.getDistancesName(curveStyle) ).pfValue;
     var segmentsN = Math.min( segmentWs.length, segmentDs.length );
     
     var srcPos = edge.source().position();
@@ -1060,6 +1060,12 @@ var bendPointUtilities = {
     
     var dist = Math.sqrt( Math.pow( diffX, 2 ) + Math.pow( diffY, 2 ) );
     return dist;
+  },
+  getWeightsName: function(curveStyle) {
+    return curveStyle === 'segments' ? 'segment-weights' : 'control-point-weights';
+  },
+  getDistancesName: function(curveStyle) {
+    return curveStyle === 'segments' ? 'segment-distances' : 'control-point-distances';
   }
 };
 
@@ -1323,6 +1329,8 @@ module.exports = debounce;
       },
       // whether to initilize bend points on creation of this extension automatically
       initBendPointsAutomatically: true,
+      // curve-style of the bent edge; either segments or unbundled-bezier
+      curveStyle: "segments",
       // the classes of those edges that should be ignored
       ignoredClasses: [],
       // whether the bend editing operations are undoable (requires cytoscape-undo-redo.js)
@@ -1366,18 +1374,19 @@ module.exports = debounce;
         // merge the options with default ones
         options = extend(defaults, opts);
         initialized = true;
+        var cyCSSProps = {
+          'curve-style': options.curveStyle,
+          'edge-distances': 'node-position'
+        };
+        cyCSSProps[bendPointUtilities.getWeightsName(options.curveStyle)] = function (ele) {
+          return bendPointUtilities.getSegmentWeightsString(ele);
+        };
+        cyCSSProps[bendPointUtilities.getDistancesName(options.curveStyle)] = function (ele) {
+          return bendPointUtilities.getSegmentDistancesString(ele);
+        };
 
         // define edgebendediting-hasbendpoints css class
-        cy.style().selector('.edgebendediting-hasbendpoints').css({
-          'curve-style': 'segments',
-          'segment-distances': function (ele) {
-            return bendPointUtilities.getSegmentDistancesString(ele);
-          },
-          'segment-weights': function (ele) {
-            return bendPointUtilities.getSegmentWeightsString(ele);
-          },
-          'edge-distances': 'node-position'
-        });
+        cy.style().selector('.edgebendediting-hasbendpoints').css(cyCSSProps);
 
         bendPointUtilities.setIgnoredClasses(options.ignoredClasses);
 

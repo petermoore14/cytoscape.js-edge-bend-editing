@@ -16,6 +16,8 @@
       },
       // whether to initilize bend points on creation of this extension automatically
       initBendPointsAutomatically: true,
+      // curve-style of the bent edge; either segments or unbundled-bezier
+      curveStyle: "segments",
       // the classes of those edges that should be ignored
       ignoredClasses: [],
       // whether the bend editing operations are undoable (requires cytoscape-undo-redo.js)
@@ -59,18 +61,19 @@
         // merge the options with default ones
         options = extend(defaults, opts);
         initialized = true;
+        var cyCSSProps = {
+          'curve-style': options.curveStyle,
+          'edge-distances': 'node-position'
+        };
+        cyCSSProps[bendPointUtilities.getWeightsName(options.curveStyle)] = function (ele) {
+          return bendPointUtilities.getSegmentWeightsString(ele);
+        };
+        cyCSSProps[bendPointUtilities.getDistancesName(options.curveStyle)] = function (ele) {
+          return bendPointUtilities.getSegmentDistancesString(ele);
+        };
 
         // define edgebendediting-hasbendpoints css class
-        cy.style().selector('.edgebendediting-hasbendpoints').css({
-          'curve-style': 'segments',
-          'segment-distances': function (ele) {
-            return bendPointUtilities.getSegmentDistancesString(ele);
-          },
-          'segment-weights': function (ele) {
-            return bendPointUtilities.getSegmentWeightsString(ele);
-          },
-          'edge-distances': 'node-position'
-        });
+        cy.style().selector('.edgebendediting-hasbendpoints').css(cyCSSProps);
 
         bendPointUtilities.setIgnoredClasses(options.ignoredClasses);
 

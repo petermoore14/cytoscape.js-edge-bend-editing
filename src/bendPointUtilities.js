@@ -119,15 +119,15 @@ var bendPointUtilities = {
     return intersectionPoint;
   },
   getSegmentPoints: function(edge) {
-    
-    if( edge.css('curve-style') !== 'segments' ) {
+    var curveStyle = edge.css('curve-style');
+    if( curveStyle !== 'segments' && curveStyle !== 'unbundled-bezier' ) {
       return undefined;
     }
     
     var segpts = [];
 
-    var segmentWs = edge.pstyle( 'segment-weights' ).pfValue;
-    var segmentDs = edge.pstyle( 'segment-distances' ).pfValue;
+    var segmentWs = edge.pstyle( this.getWeightsName(curveStyle) ).pfValue;
+    var segmentDs = edge.pstyle( this.getDistancesName(curveStyle) ).pfValue;
     var segmentsN = Math.min( segmentWs.length, segmentDs.length );
     
     var srcPos = edge.source().position();
@@ -407,6 +407,12 @@ var bendPointUtilities = {
     
     var dist = Math.sqrt( Math.pow( diffX, 2 ) + Math.pow( diffY, 2 ) );
     return dist;
+  },
+  getWeightsName: function(curveStyle) {
+    return curveStyle === 'segments' ? 'segment-weights' : 'control-point-weights';
+  },
+  getDistancesName: function(curveStyle) {
+    return curveStyle === 'segments' ? 'segment-distances' : 'control-point-distances';
   }
 };
 

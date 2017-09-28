@@ -91,6 +91,8 @@ cy.edgeBendEditing('initialized');
       },
       // whether to initilize bend points on creation of this extension automatically
       initBendPointsAutomatically: true,
+      // curve-style of the bent edge; either segments or unbundled-bezier
+      curveStyle: "segments",
       // whether the bend editing operations are undoable (requires cytoscape-undo-redo.js)
       undoable: false,
       // the size of bend shape is obtained by multipling width of edge with this parameter
