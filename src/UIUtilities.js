@@ -240,7 +240,7 @@ module.exports = function (params, cy) {
         return inside;
       }
 
-      // get tge index of bend point containing the point represented by {x, y}
+      // get the index of bend point containing the point represented by {x, y}
       function getContainingBendShapeIndex(x, y, edge) {
         if(edge.data('cyedgebendeditingWeights') == null || edge.data('cyedgebendeditingWeights').length == 0){
           return -1;
@@ -278,6 +278,15 @@ module.exports = function (params, cy) {
         cy.zoomingEnabled(lastZoomingEnabled)
           .panningEnabled(lastPanningEnabled)
           .boxSelectionEnabled(lastBoxSelectionEnabled);
+      }
+
+      // get the movebend params from an edge
+      function getMoveBendParams(edge) {
+        return {
+          edge: edge,
+          weights: edge.data('cyedgebendeditingWeights') ? [].concat(edge.data('cyedgebendeditingWeights')) : [],
+          distances: edge.data('cyedgebendeditingDistances') ? [].concat(edge.data('cyedgebendeditingDistances')) : []
+        };
       }
       
       {  
@@ -442,12 +451,7 @@ module.exports = function (params, cy) {
           }
           
           movedBendEdge = edge;
-          
-          moveBendParam = {
-            edge: edge,
-            weights: edge.data('cyedgebendeditingWeights') ? [].concat(edge.data('cyedgebendeditingWeights')) : [],
-            distances: edge.data('cyedgebendeditingDistances') ? [].concat(edge.data('cyedgebendeditingDistances')) : []
-          };
+          moveBendParam = getMoveBendParams(edgeToHighlightBends);
           
           var cyPos = event.position || event.cyPosition;
           var cyPosX = cyPos.x;
@@ -455,15 +459,33 @@ module.exports = function (params, cy) {
 
           var index = getContainingBendShapeIndex(cyPosX, cyPosY, edge);
           if (index != -1) {
-            movedBendIndex = index;
-//            movedBendEdge = edge;
-            disableGestures();
+            var curveStyle = edge.css('curve-style');
+            if(curveStyle !== 'unbundled-bezier') {
+              movedBendIndex = index;
+              disableGestures();
+            }
           }
           else {
             createBendOnDrag = true;
           }
         });
-        
+
+        cy.on('tapstart', eTapStart = function (event) {
+          if(edgeToHighlightBends) {
+            var curveStyle = edgeToHighlightBends.css('curve-style');
+            if(curveStyle === 'unbundled-bezier') {
+              var cyPos = event.position || event.cyPosition;
+              var index = getContainingBendShapeIndex(cyPos.x, cyPos.y, edgeToHighlightBends);
+              if (index != -1) {
+                movedBendEdge = edgeToHighlightBends;
+                moveBendParam = getMoveBendParams(edgeToHighlightBends);
+                movedBendIndex = index;
+                disableGestures();
+              }
+            }
+          }
+        });
+
         cy.on('tapdrag', eTapDrag = function (event) {
           var edge = movedBendEdge;
           if(movedBendEdge !== undefined && bendPointUtilities.isIgnoredEdge(edge) ) {
